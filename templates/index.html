@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI API 工厂</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 20px 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 2px solid #f0f0f0;
+            font-weight: 600;
+            padding: 1.5rem;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .result-box {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            min-height: 150px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-loading {
+            background-color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        .status-ready {
+            background-color: #28a745;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .random-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #0d6efd;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        footer {
+            background-color: #f1f3f5;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+            color: #6c757d;
+        }
+        .dice-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+            animation: spin 1s ease;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .dice-rolling {
+            animation: spin 0.5s infinite linear;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页眉 -->
+    <header class="header text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">AI API 工厂</h1>
+            <p class="lead">强大的AI服务，包含情感分析、图像描述与随机数生成</p>
+            <div id="model-status" class="mt-3">
+                <span class="status-indicator" id="status-indicator"></span>
+                <span id="status-text">正在检查模型状态...</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 随机数生成卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-dice-5"></i> 随机数生成器</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">输入最大值，生成一个0到最大值之间的随机整数</p>
+                
+                <div class="row g-3 align-items-center mb-4">
+                    <div class="col-md-4">
+                        <label for="max-value" class="form-label">最大值</label>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" id="max-value" min="1" max="1000000" value="100">
+                    </div>
+                    <div class="col-md-4">
+                        <button id="generate-random" class="btn btn-primary w-100">
+                            <i class="bi bi-dice-5 dice-icon" id="dice-icon"></i> 生成随机数
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="result-box text-center">
+                    <h6>生成的随机数：</h6>
+                    <div id="random-result" class="random-number">
+                        等待生成...
+                    </div>
+                    <div id="random-history" class="mt-3 small text-muted">
+                        <!-- 随机数历史记录将显示在这里 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 情感分析卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-emoji-heart-eyes"></i> 情感分析</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">输入一段文本，AI将分析其中的情感倾向（积极/消极）</p>
+                
+                <div class="mb-3">
+                    <label for="sentiment-text" class="form-label">输入文本</label>
+                    <textarea class="form-control" id="sentiment-text" rows="3" placeholder="输入您要分析的文本..."></textarea>
+                </div>
+                
+                <button id="analyze-btn" class="btn btn-primary">分析情感</button>
+                
+                <div class="result-box mt-4">
+                    <h6>分析结果：</h6>
+                    <div id="sentiment-result" class="mt-2">
+                        <p class="text-muted">结果将显示在这里...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图像描述卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-image"></i> 图像描述生成</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">上传一张图片，AI将自动生成描述性文字</p>
+                
+                <div class="mb-3">
+                    <label for="image-upload" class="form-label">选择图片</label>
+                    <input class="form-control" type="file" id="image-upload" accept="image/*">
+                </div>
+                
+                <div id="image-preview-container" class="text-center">
+                    <img id="image-preview" class="preview-image" alt="预览图">
+                </div>
+                
+                <button id="caption-btn" class="btn btn-primary mt-3">生成描述</button>
+                
+                <div class="result-box mt-4">
+                    <h6>图像描述：</h6>
+                    <div id="caption-result" class="mt-2">
+                        <p class="text-muted">描述将显示在这里...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer>
+        <div class="container">
+            <p>© 2023 AI API 工厂 | 基于 Hugging Face Spaces 构建</p>
+            <p class="small">本服务由情感分析模型、图像描述模型和随机数生成器提供支持</p>
+        </div>
+    </footer>
+
+    <script>
+        // 随机数历史记录
+        let randomHistory = [];
+        const MAX_HISTORY = 5;
+        
+        // 检查模型状态
+        function checkModelStatus() {
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    const indicator = document.getElementById('status-indicator');
+                    const statusText = document.getElementById('status-text');
+                    
+                    if (data.models_ready) {
+                        indicator.className = 'status-indicator status-ready';
+                        statusText.textContent = '所有模型已加载完成，服务正常运行';
+                    } else {
+                        indicator.className = 'status-indicator status-loading';
+                        statusText.textContent = '模型正在加载中，请稍候...';
+                        // 每10秒检查一次状态
+                        setTimeout(checkModelStatus, 10000);
+                    }
+                })
+                .catch(error => {
+                    console.error('检查模型状态失败:', error);
+                    setTimeout(checkModelStatus, 10000);
+                });
+        }
+
+        // 初始化页面时检查模型状态
+        document.addEventListener('DOMContentLoaded', checkModelStatus);
+
+        // 随机数生成功能
+        document.getElementById('generate-random').addEventListener('click', function() {
+            const maxValueInput = document.getElementById('max-value');
+            const maxValue = parseInt(maxValueInput.value);
+            
+            if (isNaN(maxValue) || maxValue < 1) {
+                alert('请输入有效的最大值（大于0）');
+                return;
+            }
+            
+            if (maxValue > 1000000) {
+                alert('最大值不能超过1,000,000');
+                return;
+            }
+            
+            const diceIcon = document.getElementById('dice-icon');
+            diceIcon.classList.add('dice-rolling');
+            
+            const resultElement = document.getElementById('random-result');
+            resultElement.textContent = '生成中...';
+            
+            // 调用随机数API
+            fetch('/random', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ max_value: maxValue })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('生成随机数失败');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const randomNumber = data.random_number;
+                resultElement.textContent = randomNumber;
+                
+                // 添加到历史记录
+                randomHistory.unshift({
+                    max: maxValue,
+                    result: randomNumber,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                
+                // 限制历史记录数量
+                if (randomHistory.length > MAX_HISTORY) {
+                    randomHistory.pop();
+                }
+                
+                // 更新历史记录显示
+                updateRandomHistory();
+                
+                // 添加动画效果
+                resultElement.classList.add('text-success');
+                setTimeout(() => {
+                    resultElement.classList.remove('text-success');
+                }, 1000);
+            })
+            .catch(error => {
+                resultElement.textContent = '错误';
+                document.getElementById('random-history').innerHTML = 
+                    `<div class="alert alert-danger">${error.message}</div>`;
+            })
+            .finally(() => {
+                diceIcon.classList.remove('dice-rolling');
+            });
+        });
+        
+        // 更新随机数历史记录
+        function updateRandomHistory() {
+            const historyElement = document.getElementById('random-history');
+            
+            if (randomHistory.length === 0) {
+                historyElement.innerHTML = '<p class="text-muted">无历史记录</p>';
+                return;
+            }
+            
+            let html = '<h6>历史记录：</h6><ul class="list-group">';
+            
+            randomHistory.forEach(item => {
+                html += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>0 - ${item.max}</span>
+                        <span class="badge bg-primary rounded-pill">${item.result}</span>
+                        <small class="text-muted">${item.timestamp}</small>
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            historyElement.innerHTML = html;
+        }
+
+        // 情感分析功能
+        document.getElementById('analyze-btn').addEventListener('click', function() {
+            const text = document.getElementById('sentiment-text').value.trim();
+            if (!text) {
+                alert('请输入要分析的文本');
+                return;
+            }
+            
+            const resultElement = document.getElementById('sentiment-result');
+            resultElement.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">分析中...</p></div>';
+            
+            // 调用情感分析API
+            fetch('/sentiment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('分析失败');
+                }
+                return response.json();
+            })
+            .then(data => {
+                let sentimentClass = 'text-success';
+                if (data.label === 'NEGATIVE') {
+                    sentimentClass = 'text-danger';
+                }
+                
+                const scorePercentage = (data.score * 100).toFixed(1);
+                
+                resultElement.innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="fs-5 ${sentimentClass}">${data.label === 'POSITIVE' ? '积极' : '消极'}</span>
+                        <span class="ms-2 badge ${sentimentClass === 'text-success' ? 'bg-success' : 'bg-danger'}">置信度: ${scorePercentage}%</span>
+                    </div>
+                    <p class="mb-0">"${text}"</p>
+                `;
+            })
+            .catch(error => {
+                resultElement.innerHTML = `<div class="alert alert-danger">分析失败: ${error.message}</div>`;
+            });
+        });
+
+        // 图片上传预览
+        document.getElementById('image-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            const preview = document.getElementById('image-preview');
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(file);
+        });
+
+        // 图像描述功能
+        document.getElementById('caption-btn').addEventListener('click', function() {
+            const fileInput = document.getElementById('image-upload');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('请选择一张图片');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const resultElement = document.getElementById('caption-result');
+            resultElement.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">生成描述中...</p></div>';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // 获取Base64编码（去除前缀）
+                const base64Data = e.target.result.split(',')[1];
+                
+                // 调用图像描述API
+                fetch('/caption', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: base64Data })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('生成描述失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    resultElement.innerHTML = `
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-chat-square-quote-fill text-primary fs-3"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="mb-0 fw-medium">${data.generated_text}</p>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    resultElement.innerHTML = `<div class="alert alert-danger">生成描述失败: ${error.message}</div>`;
+                });
+            };
+            
+            reader.readAsDataURL(file);
+        });
+        
+        // 初始化随机数历史记录显示
+        updateRandomHistory();
+    </script>
+</body>
+</html>
